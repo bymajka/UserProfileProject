@@ -1,12 +1,14 @@
-import http.client as httplib
 import math
 from typing import Annotated, NamedTuple, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
+from fastapi import status as status
+from starlette.status import HTTP_409_CONFLICT
 
 from .dependencies import authenticated_username
 from .models import (
     CreatePostModel,
     CreateUserModel,
+    Detailed,
     PostsParams,
     UserModel,
     LoginModel,
@@ -39,8 +41,15 @@ def _links(links: list[_Link]) -> str:
 @api.post(
     "/register",
     tags=["users"],
-    status_code=httplib.CREATED,
+    status_code=status.HTTP_201_CREATED,
     description="Register new user. Forbidden for logged in users",
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": "User already logged in",
+            "model": Detailed,
+        },
+        status.HTTP_409_CONFLICT: {"description": "Username already taken", "model": Detailed},
+    },
 )
 async def register(
     auth_username: Annotated[Optional[str], Depends(authenticated_username)],
@@ -48,10 +57,10 @@ async def register(
     response: Response,
 ) -> UserModel:
     if auth_username is not None:
-        raise HTTPException(status_code=httplib.FORBIDDEN)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     if not is_username_available(input.username):
         raise HTTPException(
-            status_code=httplib.CONFLICT, detail="Username already taken"
+            status_code=status.CONFLICT, detail="Username already taken"
         )
     user = create_user(input)
     response.headers["Link"] = _links(
@@ -67,20 +76,34 @@ async def register(
     "/login",
     tags=["users"],
     description="Does not perform anything, but checks if provided credentials are valid",
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Invalid username or password",
+            "model": Detailed,
+        }
+    },
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def login(input: Annotated[LoginModel, Body()]) -> None:
     if not verify_password(input.username, input.password):
-        raise HTTPException(status_code=httplib.UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     return None
 
 
-@api.get("/me", tags=["users"], description="Returns the currently logged in user")
+@api.get(
+    "/me",
+    tags=["users"],
+    description="Returns the currently logged in user",
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "Not logged in", "model": Detailed}
+    },
+)
 async def me(
     auth_username: Annotated[Optional[str], Depends(authenticated_username)],
     response: Response,
 ) -> UserModel:
     if auth_username is None:
-        raise HTTPException(status_code=httplib.UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     user = find_user(auth_username)
     assert user is not None
     response.headers["Link"] = _links(
@@ -91,11 +114,15 @@ async def me(
     return user
 
 
-@api.get("/users/{username}", tags=["users"])
+@api.get(
+    "/users/{username}",
+    tags=["users"],
+    responses={status.HTTP_404_NOT_FOUND: {"description": "User not found", "model": Detailed}},
+)
 async def get_user(username: str, response: Response) -> UserModel:
     user = find_user(username)
     if user is None:
-        raise HTTPException(status_code=httplib.NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     response.headers["Link"] = _links(
         [
             _Link(f"/api/users/{user.username}/posts", "posts"),
@@ -104,7 +131,11 @@ async def get_user(username: str, response: Response) -> UserModel:
     return user
 
 
-@api.get("/users/{username}/posts", tags=["posts"])
+@api.get(
+    "/users/{username}/posts",
+    tags=["posts"],
+    responses={status.HTTP_404_NOT_FOUND: {"description": "User not found", "model": Detailed}},
+)
 async def get_user_posts(
     auth_username: Annotated[Optional[str], Depends(authenticated_username)],
     username: str,
@@ -113,7 +144,7 @@ async def get_user_posts(
 ) -> list[PostModel]:
     user = find_user(username)
     if user is None:
-        raise HTTPException(status_code=httplib.NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     posts = list_user_posts(
         username=username, current_username=auth_username, page=query.page
     )
@@ -139,7 +170,17 @@ async def get_user_posts(
     return posts
 
 
-@api.post("/users/{username}/posts", tags=["posts"])
+@api.post(
+    "/users/{username}/posts",
+    tags=["posts"],
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "User not found", "model": Detailed},
+        status.HTTP_403_FORBIDDEN: {
+            "description": "User is not allowed to create post",
+            "model": Detailed,
+        },
+    },
+)
 async def publish_post(
     auth_username: Annotated[Optional[str], Depends(authenticated_username)],
     username: str,
@@ -147,10 +188,10 @@ async def publish_post(
     input: Annotated[CreatePostModel, Body()],
 ) -> PostModel:
     if auth_username is None:
-        raise HTTPException(status_code=httplib.FORBIDDEN)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     if auth_username.lower() != username.lower():
         raise HTTPException(
-            status_code=httplib.FORBIDDEN,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not allowed to create posts for other users",
         )
     post = create_post(username, input)
@@ -163,7 +204,13 @@ async def publish_post(
     return post
 
 
-@api.get("/users/{username}/posts/{post_id}", tags=["posts"])
+@api.get(
+    "/users/{username}/posts/{post_id}",
+    tags=["posts"],
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Post or user not found", "model": Detailed}
+    },
+)
 async def read_post(
     auth_username: Annotated[Optional[str], Depends(authenticated_username)],
     username: str,
@@ -172,7 +219,7 @@ async def read_post(
 ) -> PostModel:
     post = find_post(username, post_id, current_username=auth_username)
     if post is None:
-        raise HTTPException(status_code=httplib.NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     response.headers["Link"] = _links(
         [
             _Link(f"/api/users/{post.author.username}/posts", "posts"),
@@ -183,7 +230,13 @@ async def read_post(
 
 
 @api.put(
-    "/users/{username}/posts/{post_id}", tags=["posts"], status_code=httplib.CREATED
+    "/users/{username}/posts/{post_id}",
+    tags=["posts"],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "User not logged in", "model": Detailed},
+        status.HTTP_404_NOT_FOUND: {"description": "Post not found", "model": Detailed},
+    },
 )
 async def like_post(
     auth_username: Annotated[Optional[str], Depends(authenticated_username)],
@@ -192,11 +245,11 @@ async def like_post(
     response: Response,
 ) -> None:
     if auth_username is None:
-        raise HTTPException(status_code=httplib.UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     post = find_post(username, post_id, current_username=auth_username)
     if post is None:
-        raise HTTPException(status_code=httplib.NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     add_like_to_post(post, auth_username)
     response.headers["Link"] = _links(
         [
@@ -207,7 +260,13 @@ async def like_post(
 
 
 @api.delete(
-    "/users/{username}/posts/{post_id}", tags=["posts"], status_code=httplib.NO_CONTENT
+    "/users/{username}/posts/{post_id}",
+    tags=["posts"],
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "User not logged in", "model": Detailed},
+        status.HTTP_404_NOT_FOUND: {"description": "Post not found", "model": Detailed},
+    },
 )
 async def unlike_post(
     auth_username: Annotated[Optional[str], Depends(authenticated_username)],
@@ -216,11 +275,11 @@ async def unlike_post(
     response: Response,
 ) -> None:
     if auth_username is None:
-        raise HTTPException(status_code=httplib.UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     post = find_post(username, post_id, current_username=auth_username)
     if post is None:
-        raise HTTPException(status_code=httplib.NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     remove_like_from_post(post, auth_username)
     response.headers["Link"] = _links(
         [

@@ -1,8 +1,13 @@
 from datetime import datetime
-from uuid import uuid4
 from typing import Optional
 
 from pydantic import BaseModel, Field
+
+
+class Detailed(BaseModel):
+    """Generic model which is used to document error responses"""
+
+    detail: str
 
 
 class CreateUserModel(BaseModel):
