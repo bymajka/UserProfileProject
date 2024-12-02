@@ -44,20 +44,13 @@ def _links(links: list[_Link]) -> str:
     status_code=status.HTTP_201_CREATED,
     description="Register new user. Forbidden for logged in users",
     responses={
-        status.HTTP_403_FORBIDDEN: {
-            "description": "User already logged in",
-            "model": Detailed,
-        },
         status.HTTP_409_CONFLICT: {"description": "Username already taken", "model": Detailed},
     },
 )
 async def register(
-    auth_username: Annotated[Optional[str], Depends(authenticated_username)],
     input: Annotated[CreateUserModel, Body()],
     response: Response,
 ) -> UserModel:
-    if auth_username is not None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     if not is_username_available(input.username):
         raise HTTPException(
             status_code=status.CONFLICT, detail="Username already taken"
