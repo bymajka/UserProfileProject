@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 from app.models import CreatePostModel, CreateUserModel
 from .routers import api
@@ -40,3 +41,14 @@ init()
 
 app = FastAPI()
 app.include_router(api, prefix="/api", tags=["api"])
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return """
+        <html><head><title>KPI-tter</title></head>
+        <body><h1>KPI-tter</h1>
+        <p><a href="/docs">Swagger UI</a></p>
+        <p><a href="/redoc">Redoc</a></p>
+        <p><a href="/openapi.json">OpenAPI Schema</a></p>
+        </body></html>
+    """
