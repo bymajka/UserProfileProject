@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from app.models import CreatePostModel, CreateUserModel
-from .routers import api
-
-from app.logic import add_like_to_post, create_post, create_user
+from .api import api
 
 
 def init():
+    from app.models import CreatePostModel, CreateUserModel
+    from app.logic import add_like_to_post, create_post, create_user
+
     password = "12345678"
     user_1 = CreateUserModel(username="user_1", password=password, full_name="User 1")
     user_2 = CreateUserModel(username="user_2", password=password, full_name="User 2")
@@ -41,6 +41,7 @@ init()
 
 app = FastAPI()
 app.include_router(api, prefix="/api", tags=["api"])
+
 
 @app.get("/", response_class=HTMLResponse)
 async def root():

@@ -1,8 +1,7 @@
 import math
 from typing import Annotated, NamedTuple, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
-from fastapi import status as status
-from starlette.status import HTTP_409_CONFLICT
+from fastapi import status
 
 from .dependencies import authenticated_username
 from .models import (
@@ -44,7 +43,10 @@ def _links(links: list[_Link]) -> str:
     status_code=status.HTTP_201_CREATED,
     description="Register new user. Forbidden for logged in users",
     responses={
-        status.HTTP_409_CONFLICT: {"description": "Username already taken", "model": Detailed},
+        status.HTTP_409_CONFLICT: {
+            "description": "Username already taken",
+            "model": Detailed,
+        },
     },
 )
 async def register(
@@ -79,7 +81,10 @@ async def register(
 )
 async def login(input: Annotated[LoginModel, Body()]) -> None:
     if not verify_password(input.username, input.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Basic"},
+        )
     return None
 
 
@@ -88,7 +93,10 @@ async def login(input: Annotated[LoginModel, Body()]) -> None:
     tags=["users"],
     description="Returns the currently logged in user",
     responses={
-        status.HTTP_401_UNAUTHORIZED: {"description": "Not logged in", "model": Detailed}
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Not logged in",
+            "model": Detailed,
+        }
     },
 )
 async def me(
@@ -96,7 +104,10 @@ async def me(
     response: Response,
 ) -> UserModel:
     if auth_username is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Basic"},
+        )
     user = find_user(auth_username)
     assert user is not None
     response.headers["Link"] = _links(
@@ -110,7 +121,9 @@ async def me(
 @api.get(
     "/users/{username}",
     tags=["users"],
-    responses={status.HTTP_404_NOT_FOUND: {"description": "User not found", "model": Detailed}},
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "User not found", "model": Detailed}
+    },
 )
 async def get_user(username: str, response: Response) -> UserModel:
     user = find_user(username)
@@ -127,7 +140,9 @@ async def get_user(username: str, response: Response) -> UserModel:
 @api.get(
     "/users/{username}/posts",
     tags=["posts"],
-    responses={status.HTTP_404_NOT_FOUND: {"description": "User not found", "model": Detailed}},
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "User not found", "model": Detailed}
+    },
 )
 async def get_user_posts(
     auth_username: Annotated[Optional[str], Depends(authenticated_username)],
@@ -168,6 +183,10 @@ async def get_user_posts(
     tags=["posts"],
     responses={
         status.HTTP_404_NOT_FOUND: {"description": "User not found", "model": Detailed},
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Not logged in",
+            "model": Detailed,
+        },
         status.HTTP_403_FORBIDDEN: {
             "description": "User is not allowed to create post",
             "model": Detailed,
@@ -181,7 +200,10 @@ async def publish_post(
     input: Annotated[CreatePostModel, Body()],
 ) -> PostModel:
     if auth_username is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Basic"},
+        )
     if auth_username.lower() != username.lower():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -201,7 +223,10 @@ async def publish_post(
     "/users/{username}/posts/{post_id}",
     tags=["posts"],
     responses={
-        status.HTTP_404_NOT_FOUND: {"description": "Post or user not found", "model": Detailed}
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Post or user not found",
+            "model": Detailed,
+        }
     },
 )
 async def read_post(
@@ -227,7 +252,10 @@ async def read_post(
     tags=["posts"],
     status_code=status.HTTP_201_CREATED,
     responses={
-        status.HTTP_401_UNAUTHORIZED: {"description": "User not logged in", "model": Detailed},
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "User not logged in",
+            "model": Detailed,
+        },
         status.HTTP_404_NOT_FOUND: {"description": "Post not found", "model": Detailed},
     },
 )
@@ -238,7 +266,10 @@ async def like_post(
     response: Response,
 ) -> None:
     if auth_username is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Basic"},
+        )
 
     post = find_post(username, post_id, current_username=auth_username)
     if post is None:
@@ -257,7 +288,10 @@ async def like_post(
     tags=["posts"],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        status.HTTP_401_UNAUTHORIZED: {"description": "User not logged in", "model": Detailed},
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "User not logged in",
+            "model": Detailed,
+        },
         status.HTTP_404_NOT_FOUND: {"description": "Post not found", "model": Detailed},
     },
 )
@@ -268,7 +302,10 @@ async def unlike_post(
     response: Response,
 ) -> None:
     if auth_username is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Basic"},
+        )
 
     post = find_post(username, post_id, current_username=auth_username)
     if post is None:
