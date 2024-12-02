@@ -34,7 +34,7 @@ class LoginModel(BaseModel):
 class UserModel(BaseModel):
     username: str = Field(examples=["johndoe2024", "Grady_Booch"])
     full_name: Optional[str] = Field(examples=[None, "Grady Booch"])
-    posts: int = Field(ge=0, examples=[0, 100, 200])
+    posts: int = Field(ge=0, examples=[0, 100, 200], description="Number of posts")
 
 
 class CreatePostModel(BaseModel):
@@ -49,10 +49,10 @@ class PostModel(BaseModel):
         examples=[UserModel(username="johndoe2024", full_name="John Doe", posts=1)]
     )
     content: str = Field(examples=["Lorem Ipsum Dolor Sit Amet"])
-    likes: int = Field(ge=0, examples=[0, 100, 200])
+    likes: int = Field(ge=0, examples=[0, 100, 200], description="Number of likes")
     is_liked: bool
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime
 
 
-class PostsParams(BaseModel):
+class PaginationParams(BaseModel):
     page: int = Field(gt=0, default=1, examples=[1, 2, 3])
