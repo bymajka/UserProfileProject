@@ -1,0 +1,67 @@
+/* CSS Reset */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* HTML та тіло */
+html, body {
+    height: 100%; /* Розтягуємо на всю висоту екрану */
+    font-family: 'Roboto', sans-serif; /* Сучасний шрифт за замовчуванням */
+    font-size: 16px; /* Базовий розмір шрифту */
+    line-height: 1.5; /* Зручне міжрядкове відступлення */
+    color: #333; /* Основний текст темно-сірий */
+    -webkit-font-smoothing: antialiased; /* Покращення для тексту на MacOS */
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f7faff; /* Легка підложка */
+}
+
+/* Посилання */
+a {
+    text-decoration: none;
+    color: inherit; /* Наслідування кольору */
+}
+
+/* Список */
+ul, ol {
+    list-style: none;
+}
+
+/* Зображення */
+img {
+    max-width: 100%; /* Забезпечення адаптивності */
+    height: auto;
+    display: block;
+}
+
+/* Інпут та кнопки */
+input, button, textarea, select {
+    font: inherit; /* Унаследуем стиль шрифта */
+    outline: none; /* Видаляємо стандартну рамку */
+    border: none; /* Скидання стандартного бордюру */
+    background: none;
+    appearance: none; /* Прибираємо специфічний стиль браузера */
+}
+
+/* Кнопки */
+button {
+    cursor: pointer; /* Вказівник для інтерактивності */
+}
+
+/* Заголовки */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: inherit; /* Спадковий стиль шрифта */
+    line-height: 1.2; /* Компактний стиль */
+}
+
+/* Форми */
+input[type="text"],
+input[type="password"],
+textarea {
+    border: 1px solid #ddd;
+    padding: 8px;
+    border-radius: 4px;
+}
