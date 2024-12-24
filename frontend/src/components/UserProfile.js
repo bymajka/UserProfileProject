@@ -10,11 +10,10 @@ const UserProfile = () => {
     const [posts, setPosts] = useState([]);
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
     const [error, setError] = useState(null);
+    const username = localStorage.getItem('username');
+    const password = localStorage.getItem('password');
 
     useEffect(() => {
-        const username = localStorage.getItem('username');
-        const password = localStorage.getItem('password');
-        
         if (username && password) {
             // Запит для отримання даних користувача
             api.get('/me', {
@@ -51,10 +50,6 @@ const UserProfile = () => {
             setError('Користувач не авторизований.');
         }
     }, [pagination.page]);
-    
-    useEffect(() => {
-        console.log('Updated posts:', posts); 
-    }, [posts]); 
 
     const handlePagination = (direction) => {
         setPagination((prev) => ({
@@ -64,8 +59,6 @@ const UserProfile = () => {
     };
 
     const handleLike = (postId) => {
-        const username = localStorage.getItem('username');
-        const password = localStorage.getItem('password');
 
         api.put(`/users/${username}/posts/${postId}/like`, {}, {
             headers: {
@@ -85,8 +78,6 @@ const UserProfile = () => {
     };
 
     const handleUnlike = (postId) => {
-        const username = localStorage.getItem('username');
-        const password = localStorage.getItem('password');
 
         api.delete(`/users/${username}/posts/${postId}/like`, {
             headers: {

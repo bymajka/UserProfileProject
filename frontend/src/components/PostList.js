@@ -14,7 +14,7 @@ const PostList = ({ posts, onLike, onUnlike }) => {
                     <h3>{post.content}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <button 
-                            onClick={() => post.is_liked ? onUnlike(post.id) : onLike(post.id)}
+                            onClick={() => (post.is_liked ? onUnlike(post.id) : onLike(post.id))}
                             style={{
                                 background: 'none',
                                 border: 'none',

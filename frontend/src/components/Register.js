@@ -43,6 +43,7 @@ const Register = () => {
                             type="text"
                             id="username"
                             value={username}
+                            required
                             onChange={(e) => setUsername(e.target.value)}
                         />
                     </div>
@@ -52,6 +53,7 @@ const Register = () => {
                             type="password"
                             id="password"
                             value={password}
+                            required
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>

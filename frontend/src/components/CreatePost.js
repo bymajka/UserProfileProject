@@ -4,6 +4,8 @@ import api from '../services/api';
 const CreatePost = ({ onPostCreated }) => {
     const [content, setContent] = useState('');
     const [error, setError] = useState(null);
+    const username = localStorage.getItem('username');
+    const password = localStorage.getItem('password');
 
     const handleContentChange = (event) => {
         setContent(event.target.value);
@@ -11,9 +13,6 @@ const CreatePost = ({ onPostCreated }) => {
 
     const handleSubmit = (event) => {
         event.preventDefault();
-
-        const username = localStorage.getItem('username');
-        const password = localStorage.getItem('password');
         
         if (!username || !password) {
             setError('Будь ласка, увійдіть, щоб створити пост.');
